@@ -1,10 +1,11 @@
-import { Arg, Mutation, Resolver, Ctx, Query, Int, ObjectType, Field } from 'type-graphql';
+import { Arg, Mutation, Resolver, Ctx, Query, Int, ObjectType, Field, UseMiddleware } from 'type-graphql';
 import { User } from '../entities/User';
 import jwt from 'jsonwebtoken';
 import { ApolloError } from 'apollo-server-express';
 import { MyContext } from '../types/type'
 import { AuthenticationError } from 'apollo-server-express'
 import { isAuth } from '../middlewares/auth'
+import bcrypt from 'bcrypt';
 
 
 @ObjectType()
@@ -57,21 +58,49 @@ export class UserResolver {
         const valid = await user.CompareUserPassword(password);
         if (!valid) throw new ApolloError('Invalid password');
 
-        const token = jwt.sign({ user, }, 'process.env.JWT_SECRET' as string, {expiresIn: '10min'});
+        const token = jwt.sign({ user, }, 'process.env.JWT_SECRET' as string, { expiresIn: '30min' });
 
         return { user, token }
     }
 
     @Query(() => User)
-    async me(@Ctx() { req }: MyContext): Promise<User> {
-        // let userDet = isAuth()
-        let user = await User.findOne({ where: { emailId: 'userDet.emailId' } })
-        if (!user) throw new Error('no user found');
-        return user;
+    @UseMiddleware(isAuth)
+    async me(@Ctx() { user }: MyContext): Promise<User> {
+
+        let userDetails = await User.findOne({ where: { emailId: user.user.emailId } })
+        if (!userDetails) throw new Error('no user found');
+        return userDetails;
     }
 
     @Query(() => [User])
     async allUsers(): Promise<User[]> {
         return await User.find({})
+    }
+
+    @Mutation(() => Boolean)
+    @UseMiddleware(isAuth)
+    async changePassword(
+        @Arg('oldPass', () => String) oldPass: string,
+        @Arg('newPass', () => String) newPass: string,
+        @Ctx() { user }: MyContext
+    ): Promise<boolean> {
+        try {
+            const userDetails = await User.findOne({ where: { emailId: user.user.emailId } });
+            if (!userDetails) throw new ApolloError('User not found');
+
+            const valid = await userDetails.CompareUserPassword(oldPass);
+            if (!valid) throw new ApolloError('Invalid old password password');
+            
+            await User.update({ emailId: userDetails.emailId }, { password: await bcrypt.hash(newPass, 10) });
+            return true
+        } catch (error: any) {
+            throw new ApolloError(error)
+        }
+    }
+
+    @Mutation(() => Boolean)
+    async deleteAll(): Promise<any> {
+        await User.delete({})
+        return true
     }
 }

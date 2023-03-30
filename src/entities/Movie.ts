@@ -1,5 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, BaseEntity } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, BaseEntity, Like, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { ObjectType, Int, Field } from 'type-graphql'
+import { Review } from './Review';
 
 
 @Entity()
@@ -25,4 +26,15 @@ export class Movie extends BaseEntity {
     @Field(() => Date)
     releaseDate: Date;
 
+    @OneToMany(() => Review, (review) => review.movie)
+    @Field(() => [Review])
+    reviews: Review[];
+
+    @CreateDateColumn()
+    @Field(() => Date)
+    created: Date
+
+    @UpdateDateColumn()
+    @Field(() => Date)
+    updated: Date
 }

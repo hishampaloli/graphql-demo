@@ -1,4 +1,5 @@
 import { Arg, Mutation, Resolver, Ctx, Query, Int, ObjectType, Field, UseMiddleware, } from 'type-graphql';
+import { Like } from 'typeorm'
 import { ApolloError } from 'apollo-server-express';
 import { MyContext } from '../types/type'
 import { Movie } from '../entities/Movie';
@@ -26,23 +27,29 @@ export class MovieResolver {
     }
 
     @Query(() => [Movie])
-    @UseMiddleware(isAuth)
-    async allMovie(): Promise<Movie[]> {
-        try {
-            return await Movie.find({});
+    async allMovie(
+        @Arg('pagenumber', () => Int) pagenumber: number,
+        @Arg('searchQry', () => String) searchQry: string,
+    ): Promise<Movie[]> {
+        try { 
+            return await Movie.find({
+                where: { movieName: Like(`%${searchQry}%`) },
+                order: { movieName: 'ASC' },
+                skip: (pagenumber - 1) * 2,
+                take: 2,
+            });
         } catch (error: any) {
             throw new Error(error)
         }
     }
 
     @Query(() => Movie, { nullable: true })
-    @UseMiddleware(isAuth)
     async movie(
         @Arg("id", () => Int)
         id: number
     ): Promise<Movie | null> {
         try {
-            return await Movie.findOne({ where: { id } })
+            return await Movie.findOne({ where: { id } ,relations: {reviews: true}})
         } catch (err: any) {
             throw new Error(err)
         }

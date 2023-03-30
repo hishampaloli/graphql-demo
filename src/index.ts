@@ -2,23 +2,25 @@ import 'reflect-metadata'
 import express, { Express } from 'express'
 import { ApolloServer, } from 'apollo-server-express';
 import { buildSchema } from 'type-graphql';
-import { TaskResolver } from './resolvers/task';
+
 import { UserResolver } from './resolvers/user';
 import { MovieResolver } from './resolvers/movie'
 import { ApolloServerPluginLandingPageGraphQLPlayground } from 'apollo-server-core'
 import { createConnection } from 'typeorm'
-import { Task } from './entities/Task';
+
 import { User } from './entities/User';
 import session from 'express-session';
 import cookieSession from 'cookie-session'
 import { ErrorHandler, errorHandlerMiddleware } from './middlewares/errorHandler'
 import { Movie } from './entities/Movie';
+import { ReviewResolver } from './resolvers/review';
+import { Review } from './entities/Review';
 
 const main = async () => {
     const conn = await createConnection({
         type: 'postgres',
         database: 'todolist-graphql-db',
-        entities: [Task, User, Movie],
+        entities: [ User, Movie, Review],
         logging: true,
         synchronize: true,
         username: 'postgres',
@@ -40,7 +42,7 @@ const main = async () => {
 
     const apolloServer = new ApolloServer({
         schema: await buildSchema({
-            resolvers: [TaskResolver, UserResolver, MovieResolver],
+            resolvers: [ UserResolver, MovieResolver, ReviewResolver],
             validate: false
         }),
         context: ({ req, res }) => ({ req, res }),

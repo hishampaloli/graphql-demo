@@ -1,12 +1,13 @@
-import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, BaseEntity } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, BaseEntity, OneToMany, BeforeUpdate } from 'typeorm';
 import bcrypt from 'bcrypt';
 import { ObjectType, Int, Field } from 'type-graphql'
+import { Review } from './Review';
 
 
 @Entity()
 @ObjectType()
 export class User extends BaseEntity {
-    @PrimaryGeneratedColumn('uuid')
+    @PrimaryGeneratedColumn()
     @Field(() => String)
     id!: string;
 
@@ -23,7 +24,15 @@ export class User extends BaseEntity {
     @Field(() => String)
     password!: string;
 
+    @OneToMany(() => Review, (review) => review.user)
+    @Field(() => [Review])
+    reviews: Review[];
+
+
+
+
     @BeforeInsert()
+    @BeforeUpdate()
     async hashUserPassword() {
         this.password = await bcrypt.hash(this.password, 10);
     }
