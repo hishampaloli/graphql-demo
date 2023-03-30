@@ -1,9 +1,10 @@
 import { Arg, Mutation, Resolver, Ctx, Query, Int, ObjectType, Field, UseMiddleware } from 'type-graphql';
 import { User } from '../entities/User';
-import jwt from 'jsonwebtoken';
+
+import { signJWT } from '../utils/jwt'
 import { ApolloError } from 'apollo-server-express';
 import { MyContext } from '../types/type'
-import { AuthenticationError } from 'apollo-server-express'
+
 import { isAuth } from '../middlewares/auth'
 import bcrypt from 'bcrypt';
 
@@ -16,14 +17,7 @@ class LoginOutput {
     token: string;
 }
 
-// @ObjectType()
-// class MeResponse {
-//   @Field(() => {name: 's'}, { nullable: true })
-//   user?: FieldError[];
 
-//   @Field(() => User, { nullable: true })
-//   user?: User;
-// }
 
 @Resolver()
 export class UserResolver {
@@ -37,7 +31,7 @@ export class UserResolver {
 
         try {
             const user = await User.create({ emailId, password, userName }).save();
-            const token = jwt.sign({ user }, 'process.env.JWT_SECRET' as string);
+            const token = signJWT(user);
             return { user, token }
 
         } catch (error) {
@@ -58,7 +52,7 @@ export class UserResolver {
         const valid = await user.CompareUserPassword(password);
         if (!valid) throw new ApolloError('Invalid password');
 
-        const token = jwt.sign({ user, }, 'process.env.JWT_SECRET' as string, { expiresIn: '30min' });
+        const token = signJWT(user);
 
         return { user, token }
     }
@@ -66,6 +60,8 @@ export class UserResolver {
     @Query(() => User)
     @UseMiddleware(isAuth)
     async me(@Ctx() { user }: MyContext): Promise<User> {
+        console.log(user
+        );
 
         let userDetails = await User.findOne({ where: { emailId: user.user.emailId } })
         if (!userDetails) throw new Error('no user found');
@@ -90,7 +86,7 @@ export class UserResolver {
 
             const valid = await userDetails.CompareUserPassword(oldPass);
             if (!valid) throw new ApolloError('Invalid old password password');
-            
+
             await User.update({ emailId: userDetails.emailId }, { password: await bcrypt.hash(newPass, 10) });
             return true
         } catch (error: any) {

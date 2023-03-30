@@ -1,14 +1,11 @@
-import { Arg, Mutation, Resolver, Ctx, Query, Int, ObjectType, Field, UseMiddleware, } from 'type-graphql';
-import { Like, MoreThanOrEqual, } from 'typeorm'
+import { Arg, Mutation, Resolver, Ctx, Query, Int, UseMiddleware, } from 'type-graphql';
+import { MoreThanOrEqual, } from 'typeorm'
 import { ApolloError } from 'apollo-server-express';
 import { MyContext } from '../types/type'
 import { Movie } from '../entities/Movie';
 import { Review } from '../entities/Review';
 import { isAuth } from '../middlewares/auth'
 import { User } from '../entities/User';
-
-
-
 
 
 @Resolver()
@@ -25,6 +22,7 @@ export class ReviewResolver {
         try {
             let movie = await Movie.findOne({ where: { id: movieId } })
             let userfound = await User.findOne({ where: { id: user.user.id } })
+
             if (!movie) throw new ApolloError('no such movie found')
             if (!userfound) throw new ApolloError('please login with proper credentials')
 
@@ -40,8 +38,8 @@ export class ReviewResolver {
     async allReviews(
         @Ctx() { user }: MyContext
     ): Promise<Review[]> {
-        let userId = user.user.id
-        return await Review.find({ order: { user: { id: userId  ? "DESC" : "ASC" } }, relations: { movie: true, user: true } })
+        let userId = user.user.id;
+        return await Review.find({ order: { user: { id: userId ? "DESC" : "ASC" } }, relations: { movie: true, user: true } });
     }
 
     @Query(() => [Review])

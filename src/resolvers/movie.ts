@@ -1,11 +1,8 @@
-import { Arg, Mutation, Resolver, Ctx, Query, Int, ObjectType, Field, UseMiddleware, } from 'type-graphql';
+import { Arg, Mutation, Resolver, Query, Int, UseMiddleware, } from 'type-graphql';
 import { Like } from 'typeorm'
 import { ApolloError } from 'apollo-server-express';
-import { MyContext } from '../types/type'
 import { Movie } from '../entities/Movie';
 import { isAuth } from '../middlewares/auth'
-
-
 
 
 
@@ -22,7 +19,7 @@ export class MovieResolver {
         try {
             return await Movie.create({ movieName, description, directorName, releaseDate }).save();
         } catch (error: any) {
-            throw new Error(error)
+            throw new ApolloError(error)
         }
     }
 
@@ -39,7 +36,7 @@ export class MovieResolver {
                 take: 2,
             });
         } catch (error: any) {
-            throw new Error(error)
+            throw new ApolloError(error)
         }
     }
 
@@ -51,7 +48,7 @@ export class MovieResolver {
         try {
             return await Movie.findOne({ where: { id } ,relations: {reviews: true}})
         } catch (err: any) {
-            throw new Error(err)
+            throw new ApolloError(err)
         }
     }
 
@@ -65,11 +62,11 @@ export class MovieResolver {
     ): Promise<string> {
         try {
             let movie = await Movie.findOne({ where: { id } });
-            if (!movie) throw new Error("No such movie found");
+            if (!movie) throw new ApolloError("No such movie found");
             await Movie.update({ id }, { movieName, description, directorName })
             return 'Movie Updated successfully'
         } catch (error: any) {
-            throw new Error(error)
+            throw new ApolloError(error)
         }
     }
 
@@ -81,11 +78,11 @@ export class MovieResolver {
         try {
 
             const movie = await Movie.findOne({ where: { id } });
-            if (!movie) throw new Error('No such movie found');
+            if (!movie) throw new ApolloError('No such movie found');
             await Movie.delete({ id })
             return 'Movie deleted'
         } catch (error: any) {
-            throw new Error(error)
+            throw new ApolloError(error)
         }
     }
 }
